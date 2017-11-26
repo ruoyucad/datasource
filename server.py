@@ -1,19 +1,25 @@
+# webframe work
 from flask import Flask, request
 from flask_restful import Resource, Api
 from flask_cors import CORS
+# database
 from sqlalchemy import create_engine
+import pymysql
+# data manipulation
 from json import dumps
 from flask.ext.jsonpify import jsonify
 
 db_connect = create_engine('sqlite:///chinook.db')
+myconnection = create_engine('mysql+pymysql://angelo:!Qry778899@127.0.0.1/angelo?charset=utf8')
+
 app = Flask(__name__)
 cors = CORS(app, resorces={r'/d/*': {"origins": '*'}})
 api = Api(app)
-CORS(app, origins="http://127.0.0.1:5002", allow_headers=[
+CORS(app, origins="http://127.0.0.1:5002/", allow_headers=[
     "Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
     supports_credentials=True)
 
-
+# dummy data tables
 class Employees(Resource):
     def get(self):
         conn = db_connect.connect() # connect to database
@@ -34,11 +40,19 @@ class Employees_Name(Resource):
         result = {'data': [dict(zip(tuple (query.keys()) ,i)) for i in query.cursor]}
         return jsonify(result)
 
-       
+# spotify database tables    
+class MyMusic(Resource):
+    def get(self):
+        conn = myconnection.connect()
+        # get different attributes for each song
+        query = conn.execute("select valence, song_name, loudness, energy from mymusic;")
+        result = {'musicdata': [dict(zip(tuple (query.keys()) ,i)) for i in query.cursor]}
+        return jsonify(result)
 
 api.add_resource(Employees, '/employees') # Route_1
 api.add_resource(Tracks, '/tracks') # Route_2
 api.add_resource(Employees_Name, '/employees/<employee_id>') # Route_3
+api.add_resource(MyMusic,'/mymusic') # Route_4
 
 # following line will not run on pythonanywhere
 if __name__ == '__main__':
