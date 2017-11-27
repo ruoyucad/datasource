@@ -12,28 +12,33 @@ secret = credential['clientSecrect']
 client_credentials_manager = SpotifyClientCredentials(client_id=cid, client_secret=secret) 
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager) 
 sp.trace=False 
+# get data and return a pandas dataframe
+def getData(username, playlistId):
+    if username and playlistId is not None:
+        myplaylist = sp.user_playlist(username, playlistId )
+        songs = myplaylist['tracks']['items']
+        ids = []
+        for i in range(len(songs)):
+            ids.append(songs[i]['track']['id'])
+        songNames = []
+        for i in range(len(songs)):
+            songNames.append(songs[i]['track']['name'])
+        # adding song attributes
+        features = sp.audio_features(ids)
+        musicdata = pd.DataFrame(features)
+        musicdata['song_name'] = songNames
+        musicdata['song_ids'] = ids
+        print('Done !')
+        return musicdata
+    else:
+        print("please provide username and playlistID")
 
-# playlist contains 83 songs
-myplaylist = sp.user_playlist('bossangelo','5StZ5Iuq3puwrJKsg2Sdh0' )
-songs = myplaylist['tracks']['items']
-ids = []
-for i in range(len(songs)):
-    ids.append(songs[i]['track']['id'])
-    
-songNames = []
-for i in range(len(songs)):
-    songNames.append(songs[i]['track']['name'])
 
-# adding song attributes
-features = sp.audio_features(ids)
-musicdata = pd.DataFrame(features)
-musicdata['song_name'] = songNames
-musicdata['song_ids'] = ids
-print('Done !')
-
-#making database connection
-myconnection = create_engine('mysql+pymysql://angelo:!Qry778899@127.0.0.1/angelo?charset=utf8')
-print('db connected ...')
-print('writing data to database now... ')
-pd.io.sql.to_sql(musicdata,'mymusic', myconnection, schema='angelo', if_exists='append')  
-print('Complete !')
+def writeData(musicdata,genreName):
+    #making database connection
+    myconnection = create_engine('mysql+pymysql://angelo:!Qry778899@127.0.0.1/angelo?charset=utf8')
+    print('db connected ...')
+    print('writing data to database now... ')
+    # creating table 'mymusic'
+    pd.io.sql.to_sql(musicdata,genreName, myconnection, schema='angelo', if_exists='append')  
+    print('Complete !')
